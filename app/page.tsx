@@ -8,6 +8,7 @@ import MovieCard from '@/components/MovieCard';
 import MovieModal from '@/components/MovieModal';
 import SearchBar from '@/components/SearchBar';
 import FilterBar from '@/components/FilterBar';
+import ApiKeyWarning from '@/components/ApiKeyWarning';
 
 export default function Home() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -21,9 +22,14 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [showFavorites, setShowFavorites] = useState(false);
   const [favorites, setFavorites] = useState<Movie[]>([]);
+  const [apiError, setApiError] = useState(false);
   
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Check if API key is configured
+  const hasApiKey = Boolean(process.env.NEXT_PUBLIC_TMDB_API_KEY && 
+    process.env.NEXT_PUBLIC_TMDB_API_KEY !== 'demo_key_replace_with_real_key');
 
   // Fetch genres on mount
   useEffect(() => {
@@ -45,9 +51,10 @@ export default function Home() {
 
   // Fetch movies based on filters
   const fetchMovies = useCallback(async (pageNum: number, append: boolean = false) => {
-    if (loading) return;
+    if (loading || !hasApiKey) return;
     
     setLoading(true);
+    setApiError(false);
     try {
       let data;
       if (searchQuery) {
@@ -67,10 +74,11 @@ export default function Home() {
       setHasMore(pageNum < data.total_pages);
     } catch (error) {
       console.error('Error fetching movies:', error);
+      setApiError(true);
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, selectedGenre, selectedRating, loading]);
+  }, [searchQuery, selectedGenre, selectedRating, loading, hasApiKey]);
 
   // Reset and fetch when filters change
   useEffect(() => {
@@ -168,7 +176,9 @@ export default function Home() {
 
       {/* Main content */}
       <main className="container mx-auto px-4 py-8">
-        {displayedMovies.length === 0 && !loading ? (
+        {!hasApiKey ? (
+          <ApiKeyWarning />
+        ) : displayedMovies.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <svg
               className="h-24 w-24 text-gray-700 mb-4"
