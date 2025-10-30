@@ -22,14 +22,13 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [showFavorites, setShowFavorites] = useState(false);
   const [favorites, setFavorites] = useState<Movie[]>([]);
-  const [apiError, setApiError] = useState(false);
   
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Check if API key is configured
-  const hasApiKey = Boolean(process.env.NEXT_PUBLIC_TMDB_API_KEY && 
-    process.env.NEXT_PUBLIC_TMDB_API_KEY !== 'demo_key_replace_with_real_key');
+  // Check if API key is configured (client-side validation for UX)
+  const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+  const hasApiKey = Boolean(apiKey && apiKey.length > 10 && !apiKey.includes('demo_key'));
 
   // Fetch genres on mount
   useEffect(() => {
@@ -54,7 +53,6 @@ export default function Home() {
     if (loading || !hasApiKey) return;
     
     setLoading(true);
-    setApiError(false);
     try {
       let data;
       if (searchQuery) {
@@ -74,7 +72,6 @@ export default function Home() {
       setHasMore(pageNum < data.total_pages);
     } catch (error) {
       console.error('Error fetching movies:', error);
-      setApiError(true);
     } finally {
       setLoading(false);
     }
